@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand colors — School of GenZ design system */
+  --color-ink: #221b5e;
+  --color-purple: #5b2ee5;
+  --color-purple-deep: #4a22c4;
+  --color-gold: #ffc226;
+  --color-red: #ee5a5a;
+  --color-periwinkle: #a9adf3;
+  --color-lavender: #eeeffb;
+  --color-paper: #ffffff;
+  --color-cloud: #f4f4f6;
+  --color-success: #1fa36b;
+  --color-warning: #f59e0b;
+  --color-danger: #e5484d;
+  --color-info: #3b82f6;
+
+  /* Fonts */
+  --font-display: var(--font-baloo), system-ui, sans-serif;
+  --font-body: var(--font-hind), system-ui, sans-serif;
+
+  /* "Clean + Sticker" radius scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Sticker + soft shadow tokens */
+  --shadow-sticker-sm: 2px 2px 0 0 var(--color-ink);
+  --shadow-sticker: 4px 4px 0 0 var(--color-ink);
+  --shadow-sticker-lg: 6px 6px 0 0 var(--color-ink);
+  --shadow-soft: 0 4px 16px rgb(34 27 94 / 0.08);
+
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-brand: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-body antialiased;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4 {
+    line-height: 1.3;
+  }
+
+  a {
+    color: var(--color-purple);
+  }
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+@keyframes sog-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sog-up {
+  animation: sog-up 0.45s ease both;
+}
+
+/* Repeating diagonal placeholder used for batch-card thumbnails */
+.bg-batch-thumb {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-lavender),
+    var(--color-lavender) 10px,
+    #e1e2f3 10px,
+    #e1e2f3 20px
+  );
+}
+
+/* Subtle horizontal rule pattern used behind the final CTA band */
+.bg-cta-stripes::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    rgba(255, 255, 255, 0) 0 37px,
+    rgba(255, 255, 255, 0.35) 37px 38px
+  );
+}
+
+@keyframes sog-chat-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-chat-in {
+  animation: sog-chat-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes sog-chat-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.animate-chat-dot {
+  animation: sog-chat-dot 1.1s infinite;
+}
+
+@keyframes sog-slide {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-sog-slide {
+  animation: sog-slide 0.35s ease;
+}
+
+@keyframes sog-pop {
+  0% {
+    transform: scale(0) rotate(-20deg);
+  }
+  70% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.animate-sog-pop {
+  animation: sog-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sog-marq-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes sog-marq-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-marquee-left {
+  animation: sog-marq-left linear infinite;
+}
+
+.animate-marquee-right {
+  animation: sog-marq-right linear infinite;
+}
+
+@keyframes sog-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-sog-spin {
+  animation: sog-spin 9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
