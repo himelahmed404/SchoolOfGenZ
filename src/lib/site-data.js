@@ -9,6 +9,8 @@ export const ENROLLING = "ভর্তি চলছে";
 const DEPARTMENTS = { Civil: "সিভিল", Electrical: "ইলেকট্রিক্যাল", Electronics: "ইলেকট্রনিক্স", Mechanical: "মেকানিক্যাল" };
 /** A count of students is shown from here up; a new batch does not say "1 student". */
 const WORTH_SAYING = 20;
+/** On a lesson anyone can watch, and on a chapter that has one. */
+const FREE = "ফ্রি ▶";
 
 const list = (v) => (Array.isArray(v) ? v : []);
 const text = (v) => (typeof v === "string" ? v : "");
@@ -76,7 +78,7 @@ export function toBatch(b, today) {
       title: s.titleBn || s.title,
       code: s.bteb ? `BTEB ${s.bteb}` : s.code,
       meta: `${toBn(list(s.chapters).length)} অধ্যায় · ${toBn(s.lessons)} লেসন`,
-      rows: list(s.chapters).map((c) => ({ text: c.name, meta: `${toBn(c.lessons.length)} লেসন` })),
+      rows: list(s.chapters).map((c) => ({ text: c.name, meta: `${toBn(c.lessons.length)} লেসন`, ...(c.lessons.some((l) => l.free) ? { badge: FREE } : {}) })),
     })),
     routine: list(b.routine).map((r) => ({ day: WEEKDAYS[r.weekday] || "", time: toBn(r.time), subject: r.course || "", teacher: r.teacher || "" })),
     // The people the sales page names; without them, whoever teaches the subjects.
@@ -116,7 +118,7 @@ export function toSkill(s) {
     modules: c.chapters.map((m) => ({
       title: m.name,
       meta: `${toBn(m.lessons.length)} লেসন · ${hoursBn(m.lessons.reduce((n, l) => n + l.durationSec, 0))}`,
-      rows: m.lessons.map((l) => ({ text: l.title, meta: l.durationSec ? clockBn(l.durationSec) : "" })),
+      rows: m.lessons.map((l) => ({ text: l.title, meta: l.durationSec ? clockBn(l.durationSec) : "", ...(l.free ? { badge: FREE } : {}) })),
     })),
     instructor: first
       ? { name: first.name, role: text(first.role), badges: list(first.badges), quote: text(first.quote) }
