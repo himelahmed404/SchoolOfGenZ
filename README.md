@@ -6,7 +6,7 @@ Batches, single courses, prices, the syllabus, sales copy and the payment number
 
 - `src/lib/api.js` reads `/v1/public/*` on the server and keeps each answer for a minute, so a price changed in the admin console shows here within a minute or so.
 - `src/lib/site-data.js` turns the API's numbers and dates into the Bangla strings the pages show.
-- The enrollment form (`src/app/enroll`) asks the API for the price, checks a coupon and sends the form through `/api/*`, which `next.config.mjs` forwards to the API. `src/lib/enroll.js` words the API's error codes in Bangla.
+- The enrollment form (`src/app/enroll`) asks the API for the price, checks a coupon and sends the form through `/api/v1/public/*`, the only part of the API that `next.config.mjs` forwards. `src/lib/enroll.js` words the API's error codes in Bangla.
 - `src/lib/data/batches.js` and `skills.js` are no longer read by any page. They stay as the source for the API's `npm run db:import-site`.
 
 | Variable | What it is |
