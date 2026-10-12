@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { getBatchBySlug } from "@/lib/data/batches";
+import { getBatch, getSite } from "@/lib/api";
 import BatchDetailClient from "./BatchDetailClient";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const batch = getBatchBySlug(slug);
+  const batch = await getBatch(slug);
   if (!batch) return {};
   return {
     title: `${batch.title} | School of GenZ`,
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }) {
 
 export default async function BatchDetailPage({ params }) {
   const { slug } = await params;
-  const batch = getBatchBySlug(slug);
+  const batch = await getBatch(slug);
   if (!batch) notFound();
-  return <BatchDetailClient batch={batch} />;
+  return <BatchDetailClient batch={batch} site={await getSite()} />;
 }

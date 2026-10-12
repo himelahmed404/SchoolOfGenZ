@@ -2,11 +2,10 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { BATCHES } from "@/lib/data/batches";
-import { SKILLS } from "@/lib/data/skills";
+import { ENROLLING } from "@/lib/site-data";
 
 function BatchRailCard({ b }) {
-  const enrolling = b.status === "ভর্তি চলছে";
+  const enrolling = b.status === ENROLLING;
   return (
     <Link
       href={`/academic/${b.slug}`}
@@ -58,7 +57,7 @@ function SkillRailCard({ s }) {
         <div className="text-[13.5px] text-ink/60 mt-1.25">
           {s.lessons} · {s.dur}
         </div>
-        <div className="text-[12.5px] text-success font-bold mt-1">♾️ লাইফটাইম · 🎓 সার্টিফিকেট</div>
+        <div className="text-[12.5px] text-success font-bold mt-1">♾️ লাইফটাইম{s.certificate ? " · 🎓 সার্টিফিকেট" : ""}</div>
         <div className="flex items-baseline gap-2.25 mt-3">
           <span className="font-display font-extrabold text-[22px]">{s.price}</span>
           <span className="line-through text-ink/40 text-sm">{s.old}</span>
@@ -71,7 +70,7 @@ function SkillRailCard({ s }) {
   );
 }
 
-export default function Rails() {
+export default function Rails({ batches, skills }) {
   const acadRailRef = useRef(null);
   const scrollAcad = (dir) => acadRailRef.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
 
@@ -111,7 +110,7 @@ export default function Rails() {
           className="max-w-[1200px] mx-auto px-6 flex gap-4.5 overflow-x-auto [scrollbar-width:none]"
           style={{ scrollSnapType: "x mandatory" }}
         >
-          {BATCHES.slice(0, 3).map((b) => (
+          {batches.slice(0, 3).map((b) => (
             <BatchRailCard key={b.slug} b={b} />
           ))}
           <Link
@@ -133,7 +132,7 @@ export default function Rails() {
           ক্যারিয়ার বদলে দেওয়া স্কিল
         </h2>
         <div className="flex gap-4.5 overflow-x-auto pb-1.5 [scrollbar-width:none]" style={{ scrollSnapType: "x mandatory" }}>
-          {SKILLS.map((s) => (
+          {skills.map((s) => (
             <SkillRailCard key={s.slug} s={s} />
           ))}
           <Link

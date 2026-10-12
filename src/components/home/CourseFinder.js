@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { BATCHES } from "@/lib/data/batches";
-import { SKILLS } from "@/lib/data/skills";
+import { ENROLLING } from "@/lib/site-data";
 
 const DEPARTMENTS = ["CST", "সিভিল", "ইলেকট্রিক্যাল", "ইলেকট্রনিক্স", "মেকানিক্যাল"];
 const SEMESTERS = ["১ম", "২য়", "৩য়", "৪র্থ", "৫ম", "৬ষ্ঠ"];
-const GOALS = [
-  { label: "ইংরেজিতে কথা বলতে চাই", slug: "spoken-english-mastery" },
-  { label: "স্টেজে ভয় লাগে", slug: "public-speaking-presentation" },
-  { label: "IELTS দেবো", slug: "ielts-preparation" },
+/** What a course is for, in the student's words. A course with no line here is offered by its title. */
+const GOAL_OF = [
+  [/spoken|english/, "ইংরেজিতে কথা বলতে চাই"],
+  [/speaking|presentation/, "স্টেজে ভয় লাগে"],
+  [/ielts/, "IELTS দেবো"],
 ];
+const goalOf = (sk) => GOAL_OF.find(([slug]) => slug.test(sk.slug))?.[1] || sk.title;
 
 function chipClass(active, accent) {
   const base =
@@ -27,7 +28,7 @@ function tabClass(active) {
   );
 }
 
-export default function CourseFinder() {
+export default function CourseFinder({ batches, skills }) {
   const [mode, setMode] = useState("academic");
   const [dept, setDept] = useState(null);
   const [sem, setSem] = useState(null);
@@ -49,8 +50,8 @@ export default function CourseFinder() {
 
   let result = null;
   if (isAcad && dept && sem) {
-    const b = BATCHES.find((x) => x.dept === dept && x.sem === sem);
-    if (b && b.status === "ভর্তি চলছে") {
+    const b = batches.find((x) => x.dept === dept && x.sem === sem && x.status === ENROLLING);
+    if (b) {
       result = {
         card: true,
         badge: "📘 " + b.status,
@@ -67,15 +68,14 @@ export default function CourseFinder() {
       result = { empty: true, title: `${dept} — ${sem} সেমিস্টার`, sub: "এই ব্যাচটি শীঘ্রই আসছে — চালু হলে SMS পেতে নাম্বার দাও।" };
     }
   } else if (isSkill && goal) {
-    const g = GOALS.find((x) => x.label === goal);
-    const sk = g && SKILLS.find((x) => x.slug === g.slug);
+    const sk = skills.find((x) => x.slug === goal);
     if (sk) {
       result = {
         card: true,
         badge: "🚀 স্কিল কোর্স",
         badgeClass: "bg-gold text-ink",
         title: sk.title,
-        meta: `${sk.lessons} · ${sk.dur} · ♾️ লাইফটাইম · 🎓 সার্টিফিকেট`,
+        meta: `${sk.lessons} · ${sk.dur} · ♾️ লাইফটাইম${sk.certificate ? " · 🎓 সার্টিফিকেট" : ""}`,
         price: sk.price,
         old: sk.old,
         href: `/skills/${sk.slug}`,
@@ -150,14 +150,14 @@ export default function CourseFinder() {
             <div className="mt-6">
               <div className="font-bold text-sm text-ink/65 mb-2.5">তোমার লক্ষ্য কী?</div>
               <div className="flex flex-wrap gap-2.25">
-                {GOALS.map((g) => (
+                {skills.map((sk) => (
                   <button
-                    key={g.label}
+                    key={sk.slug}
                     type="button"
-                    onClick={() => setGoal(g.label)}
-                    className={chipClass(g.label === goal, "gold")}
+                    onClick={() => setGoal(sk.slug)}
+                    className={chipClass(sk.slug === goal, "gold")}
                   >
-                    {g.label}
+                    {goalOf(sk)}
                   </button>
                 ))}
               </div>

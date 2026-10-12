@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import SupportChat from "@/components/SupportChat";
-import { getBatchBySlug } from "@/lib/data/batches";
-import { getSkillBySlug } from "@/lib/data/skills";
-import { toBn, toBnTaka, priceToInt, fromBn } from "@/lib/bn";
+import Turnstile, { HAS_CAPTCHA } from "@/components/Turnstile";
+import { phoneBn, toBn, toBnTaka } from "@/lib/bn";
+import { getQuote, phoneOk, say, sendEnrollment, trxOk } from "@/lib/enroll";
 
 const STEP_LABELS = ["তথ্য", "পেমেন্ট", "নিশ্চিতকরণ", "সম্পন্ন"];
 
@@ -16,6 +15,9 @@ const primaryBtnClass =
   "font-display font-bold text-base px-6.5 py-3.25 bg-purple text-white border-2 border-ink rounded-full shadow-sticker-sm cursor-pointer";
 const ghostBtnClass =
   "font-display font-bold text-base px-5.5 py-3.25 bg-white text-ink border-2 border-ink rounded-full shadow-sticker-sm cursor-pointer";
+const choiceClass = (on) =>
+  "font-display font-bold text-[15px] px-4 py-2.5 border-2 border-ink rounded-xl cursor-pointer " +
+  (on ? "bg-ink text-white shadow-sticker-sm" : "bg-white text-ink");
 
 function StepChip({ n, label, step }) {
   const active = step === n;
@@ -40,35 +42,49 @@ function StepChip({ n, label, step }) {
   );
 }
 
-export default function EnrollClient() {
-  const searchParams = useSearchParams();
-  const type = searchParams.get("type");
-  const slug = searchParams.get("slug");
-  const item =
-    type === "skill" ? getSkillBySlug(slug) : type === "batch" ? getBatchBySlug(slug) : null;
-
+export default function EnrollClient({ item, site }) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [institution, setInstitution] = useState("");
-  const [dept, setDept] = useState("");
-  const [sem, setSem] = useState("");
+  const [method, setMethod] = useState("bKash");
+  const [part, setPart] = useState(false);
   const [trx, setTrx] = useState("");
   const [sender, setSender] = useState("");
   const [errors, setErrors] = useState({});
   const [couponInput, setCouponInput] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [couponCode, setCouponCode] = useState("");
   const [couponMsg, setCouponMsg] = useState("");
+  // What the server says it costs. The price the page came with is shown only until this arrives.
+  const [quote, setQuote] = useState(null);
+  const [blocked, setBlocked] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [captcha, setCaptcha] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
 
-  if (!item) {
+  const program = item?.program;
+  const batch = item?.batch;
+  useEffect(() => {
+    if (!program) return;
+    let live = true;
+    getQuote({ program, batch }).then(
+      (q) => live && setQuote(q),
+      (e) => live && setBlocked(say(e).form || "")
+    );
+    return () => {
+      live = false;
+    };
+  }, [program, batch]);
+
+  if (!item || blocked) {
     return (
       <div className="min-h-screen bg-cloud grid place-items-center px-6 py-16">
         <div className="max-w-110 w-full bg-white border-2 border-ink rounded-2xl shadow-sticker p-8 text-center">
           <div className="text-4xl mb-3">🐧</div>
-          <h1 className="font-display font-extrabold text-2xl mb-2">কোনো কোর্স বাছা হয়নি</h1>
+          <h1 className="font-display font-extrabold text-2xl mb-2">
+            {item ? "এখন ভর্তি হওয়া যাচ্ছে না" : "কোনো কোর্স বাছা হয়নি"}
+          </h1>
           <p className="text-[15px] text-ink/65 mb-6">
-            ভর্তি হতে চাইলে আগে একটা ব্যাচ বা স্কিল কোর্স বেছে নাও।
+            {item ? blocked : "ভর্তি হতে চাইলে আগে একটা ব্যাচ বা স্কিল কোর্স বেছে নাও।"}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <Link
@@ -89,29 +105,40 @@ export default function EnrollClient() {
     );
   }
 
-  const priceNum = priceToInt(item.price);
-  const oldNum = item.old ? priceToInt(item.old) : priceNum;
-  const baseDiscount = Math.max(0, oldNum - priceNum);
-  const discount = baseDiscount + (couponApplied ? 300 : 0);
-  const total = Math.max(0, oldNum - discount);
-  const itemSubLabel = type === "skill" ? "স্কিল কোর্স" : `${item.dept} · একাডেমিক`;
+  const price = quote ? quote.price : item.priceNum;
+  const couponOff = quote ? quote.discount : 0;
+  const total = quote ? quote.total : item.priceNum;
+  const coupon = quote?.coupon || "";
+  const oldNum = Math.max(item.oldNum, price);
+  const baseDiscount = oldNum - price;
+  const canSplit = !!quote?.installment;
+  const payNow = part && canSplit ? quote.installment : total;
+  const free = payNow === 0;
+  const payNumber = phoneBn(method === "bKash" ? site.bkash : site.nagad);
+  const itemSubLabel = item.kind === "skill" ? "স্কিল কোর্স" : `${item.dept} · একাডেমিক`;
+
+  const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
   const next = () => {
     if (step === 1) {
       const errs = {};
-      if (!name.trim()) errs.name = "নাম লিখতে ভুলে গেছো।";
-      if (fromBn(phone).replace(/[^0-9]/g, "").length !== 11)
-        errs.phone = "ফোন নম্বরটি আবার দেখো — ১১ ডিজিট হবে।";
+      if (name.trim().length < 2) errs.name = "নাম লিখতে ভুলে গেছো।";
+      if (!phoneOk(phone)) errs.phone = "ফোন নম্বরটি আবার দেখো — ১১ ডিজিট হবে।";
       if (Object.keys(errs).length) {
         setErrors(errs);
         return;
       }
+      // Nothing to pay: there is no payment to describe, so the form is sent from here.
+      if (free) {
+        submit();
+        return;
+      }
       setErrors({});
       setStep(2);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      toTop();
     } else if (step === 2) {
       setStep(3);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      toTop();
     }
   };
 
@@ -120,31 +147,71 @@ export default function EnrollClient() {
     setStep((s) => Math.max(1, s - 1));
   };
 
-  const submit = () => {
+  const submit = async () => {
     const errs = {};
-    if (trx.trim().length < 6) errs.trx = "TrxID টা আবার দেখো — bKash SMS-এ পাবে।";
-    if (fromBn(sender).replace(/[^0-9]/g, "").length !== 11) errs.sender = "নম্বরটি ১১ ডিজিট হবে।";
+    if (!free && !trxOk(trx)) errs.trx = `TrxID টা আবার দেখো — ${method} SMS-এ পাবে।`;
+    if (!free && !phoneOk(sender)) errs.sender = "নম্বরটি ১১ ডিজিট হবে।";
+    if (HAS_CAPTCHA && !captcha) errs.form = "নিচের যাচাই বক্সটি সম্পন্ন করো।";
     if (Object.keys(errs).length) {
       setErrors(errs);
       return;
     }
     setErrors({});
-    setStep(4);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const applyCoupon = () => {
-    const code = couponInput.trim().toUpperCase();
-    if (code === "GENZ2026") {
-      setCouponApplied(true);
-      setCouponCode(code);
-      setCouponMsg("");
-    } else if (!code) {
-      setCouponMsg("একটা কুপন কোড লেখো।");
-    } else {
-      setCouponMsg("কুপনটি কাজ করছে না — আবার দেখো।");
+    setBusy(true);
+    try {
+      await sendEnrollment({
+        program,
+        batch,
+        coupon: coupon || undefined,
+        name: name.trim(),
+        phone,
+        institute: institution.trim() || undefined,
+        ...(free ? {} : { method, trxId: trx.trim(), sender, part: (part && canSplit) || undefined }),
+        captcha: captcha || undefined,
+      });
+      setStep(4);
+      toTop();
+    } catch (e) {
+      const said = say(e);
+      setErrors(said);
+      if (said.name || said.phone) setStep(1);
+      // The coupon stopped working since it was applied: show the price without it.
+      if (said.coupon) {
+        setCouponMsg(said.coupon);
+        getQuote({ program, batch }).then(setQuote, () => {});
+      }
+      // An answer from the check works once, so a second try needs a new one.
+      setCaptcha("");
+      setCaptchaKey((k) => k + 1);
+    } finally {
+      setBusy(false);
     }
   };
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponMsg("একটা কুপন কোড লেখো।");
+      return;
+    }
+    setBusy(true);
+    try {
+      setQuote(await getQuote({ program, batch, coupon: code }));
+      setCouponMsg("");
+    } catch (e) {
+      const said = say(e);
+      setCouponMsg(said.coupon || said.form);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const check = (
+    <>
+      <Turnstile key={captchaKey} onToken={setCaptcha} />
+      {errors.form && <div className="text-red text-[13.5px] mt-3">{errors.form}</div>}
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-cloud font-body text-ink">
@@ -182,7 +249,7 @@ export default function EnrollClient() {
               ভর্তির অনুরোধ পেয়েছি!
             </h1>
             <p className="text-[17px] text-ink/75 mt-3">
-              ২৪ ঘণ্টার মধ্যে কনফার্মেশন SMS পাবে। পেমেন্ট মিলে গেলেই ড্যাশবোর্ড খুলে যাবে।
+              ২৪ ঘণ্টার মধ্যে কনফার্মেশন SMS পাবে। {free ? "যাচাই হলেই" : "পেমেন্ট মিলে গেলেই"} ড্যাশবোর্ড খুলে যাবে।
             </p>
             <div className="bg-lavender rounded-[14px] px-4.5 py-4 my-5.5 text-left text-[14.5px] text-ink/75">
               <div className="font-display font-bold text-ink mb-1.5">এখন যা করবে</div>
@@ -206,7 +273,7 @@ export default function EnrollClient() {
                 হোমে ফিরে যাও
               </Link>
             </div>
-            <div className="text-[13.5px] text-ink/55 mt-5">সমস্যা? 📞 ০১XXXXXXXXX (সকাল ৯টা — রাত ১০টা)</div>
+            <div className="text-[13.5px] text-ink/55 mt-5">সমস্যা? 📞 {phoneBn(site.supportPhone)} (সকাল ৯টা — রাত ১০টা)</div>
           </div>
         </div>
       ) : (
@@ -248,31 +315,12 @@ export default function EnrollClient() {
                       className={inputClass}
                     />
                   </label>
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <label className="block">
-                      <span className="font-semibold text-sm">ডিপার্টমেন্ট</span>
-                      <input
-                        value={dept}
-                        onChange={(e) => setDept(e.target.value)}
-                        placeholder="CST"
-                        className={inputClass}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="font-semibold text-sm">সেমিস্টার</span>
-                      <input
-                        value={sem}
-                        onChange={(e) => setSem(e.target.value)}
-                        placeholder="৪র্থ"
-                        className={inputClass}
-                      />
-                    </label>
-                  </div>
                   {errors.name && <span className="text-red text-[13px] -mt-2">{errors.name}</span>}
                 </div>
+                {free && check}
                 <div className="flex justify-end mt-6">
-                  <button type="button" onClick={next} className={primaryBtnClass}>
-                    পরবর্তী ধাপ →
+                  <button type="button" onClick={next} disabled={busy} className={primaryBtnClass}>
+                    {free ? "ভর্তি সম্পন্ন করো ✓" : "পরবর্তী ধাপ →"}
                   </button>
                 </div>
               </div>
@@ -284,14 +332,31 @@ export default function EnrollClient() {
                 <p className="text-[14.5px] text-ink/60 mt-1 mb-4.5">
                   নিচের নম্বরে ঠিক এই পরিমাণ Send Money করো।
                 </p>
+                <div className="flex flex-wrap gap-2.5 mb-4">
+                  {["bKash", "Nagad"].map((m) => (
+                    <button key={m} type="button" onClick={() => setMethod(m)} aria-pressed={method === m} className={choiceClass(method === m)}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                {canSplit && (
+                  <div className="flex flex-wrap gap-2.5 mb-4">
+                    <button type="button" onClick={() => setPart(false)} aria-pressed={!part} className={choiceClass(!part)}>
+                      পুরোটা একসাথে · {toBnTaka(total)}
+                    </button>
+                    <button type="button" onClick={() => setPart(true)} aria-pressed={part} className={choiceClass(part)}>
+                      {toBn(quote.installments)} কিস্তিতে · এখন {toBnTaka(quote.installment)}
+                    </button>
+                  </div>
+                )}
                 <div className="bg-lavender border-2 border-ink rounded-2xl p-5 grid gap-3">
                   <div className="flex justify-between items-center gap-2.5">
-                    <span className="text-ink/65">bKash নম্বর</span>
-                    <span className="font-display font-extrabold text-lg">০১XXXXXXXXX</span>
+                    <span className="text-ink/65">{method} নম্বর</span>
+                    <span className="font-display font-extrabold text-lg">{payNumber}</span>
                   </div>
                   <div className="flex justify-between items-center gap-2.5 border-t border-dashed border-ink/20 pt-3">
                     <span className="text-ink/65">পরিমাণ</span>
-                    <span className="font-display font-extrabold text-lg text-purple">{toBnTaka(total)}</span>
+                    <span className="font-display font-extrabold text-lg text-purple">{toBnTaka(payNow)}</span>
                   </div>
                   <div className="flex justify-between items-center gap-2.5 border-t border-dashed border-ink/20 pt-3">
                     <span className="text-ink/65">রেফারেন্স</span>
@@ -299,7 +364,7 @@ export default function EnrollClient() {
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5 mt-4">
-                  {["bKash খোলো", "Send Money", "TrxID কপি করো"].map((label, i) => (
+                  {[`${method} খোলো`, "Send Money", "TrxID কপি করো"].map((label, i) => (
                     <div key={label} className="text-center">
                       <div className="h-30 rounded-[10px] bg-[repeating-linear-gradient(45deg,#f7dce9,#f7dce9_8px,#f2cadd_8px,#f2cadd_16px)] grid place-items-center font-mono text-[10px] text-ink/50">
                         STEP {toBn(i + 1)}
@@ -323,7 +388,7 @@ export default function EnrollClient() {
               <div>
                 <div className="font-display font-extrabold text-[22px]">পেমেন্ট নিশ্চিত করো</div>
                 <p className="text-[14.5px] text-ink/60 mt-1 mb-5">
-                  bKash থেকে পাওয়া TrxID আর যে নম্বর থেকে পাঠিয়েছো, লিখে দাও।
+                  {method} থেকে পাওয়া TrxID আর যে নম্বর থেকে পাঠিয়েছো, লিখে দাও।
                 </p>
                 <div className="grid gap-4">
                   <label className="block">
@@ -348,11 +413,12 @@ export default function EnrollClient() {
                     {errors.sender && <span className="block text-red text-[13px] mt-1">{errors.sender}</span>}
                   </label>
                 </div>
+                {check}
                 <div className="flex justify-between gap-3 mt-6">
                   <button type="button" onClick={back} className={ghostBtnClass}>
                     ← ফিরে যাও
                   </button>
-                  <button type="button" onClick={submit} className={primaryBtnClass}>
+                  <button type="button" onClick={submit} disabled={busy} className={primaryBtnClass}>
                     ভর্তি সম্পন্ন করো ✓
                   </button>
                 </div>
@@ -378,16 +444,16 @@ export default function EnrollClient() {
                 <span className="text-ink/65">কোর্স ফি</span>
                 <span>{toBnTaka(oldNum)}</span>
               </div>
-              {discount > 0 && (
+              {baseDiscount > 0 && (
                 <div className="flex justify-between text-[14.5px] mb-2">
                   <span className="text-ink/65">ছাড়</span>
                   <span className="text-success">− {toBnTaka(baseDiscount)}</span>
                 </div>
               )}
-              {couponApplied && (
+              {coupon && (
                 <div className="flex justify-between text-[14.5px] mb-2">
-                  <span className="text-ink/65">কুপন ({couponCode})</span>
-                  <span className="text-success">− {toBnTaka(300)}</span>
+                  <span className="text-ink/65">কুপন ({coupon})</span>
+                  <span className="text-success">− {toBnTaka(couponOff)}</span>
                 </div>
               )}
               <div className="border-t-2 border-ink my-3" />
@@ -395,8 +461,14 @@ export default function EnrollClient() {
                 <span className="font-display font-bold">সর্বমোট</span>
                 <span className="font-display font-extrabold text-2xl">{toBnTaka(total)}</span>
               </div>
+              {payNow < total && (
+                <div className="flex justify-between text-[14.5px] mt-2">
+                  <span className="text-ink/65">এখন দিতে হবে</span>
+                  <span className="font-bold">{toBnTaka(payNow)}</span>
+                </div>
+              )}
 
-              {!couponApplied ? (
+              {price === 0 ? null : !coupon ? (
                 <>
                   <div className="flex gap-2 mt-4">
                     <input
@@ -408,15 +480,13 @@ export default function EnrollClient() {
                     <button
                       type="button"
                       onClick={applyCoupon}
+                      disabled={busy}
                       className="font-display font-bold text-sm px-4 py-2.25 bg-ink text-white border-2 border-ink rounded-[10px] cursor-pointer"
                     >
                       প্রয়োগ
                     </button>
                   </div>
                   {couponMsg && <div className="text-[12.5px] text-red mt-1.5">{couponMsg}</div>}
-                  <div className="text-[11.5px] text-ink/40 mt-1.5">
-                    ট্রাই করো: <b>GENZ2026</b>
-                  </div>
                 </>
               ) : (
                 <div className="flex items-center gap-1.5 mt-3.5 bg-success/10 text-success rounded-[10px] px-3 py-2.25 text-[13.5px] font-semibold">

@@ -63,7 +63,7 @@ const FAQS = [
   { q: "সার্টিফিকেট কি পাব?", a: "তিনটি স্কিল কোর্সেই কোর্স শেষে সার্টিফিকেট পাবে। একাডেমিক ব্যাচের ক্ষেত্রে ব্যাচ-ভিত্তিক নিয়ম প্রযোজ্য।" },
 ];
 
-export default function HomeClient() {
+export default function HomeClient({ batches, skills }) {
   const progressRef = useRef(null);
 
   useEffect(() => {
@@ -143,9 +143,9 @@ export default function HomeClient() {
         </div>
       </section>
 
-      <CourseFinder />
+      <CourseFinder batches={batches} skills={skills} />
 
-      <Rails />
+      <Rails batches={batches} skills={skills} />
 
       {/* DELIVERABLES */}
       <section className="bg-white">

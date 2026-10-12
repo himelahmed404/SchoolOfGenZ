@@ -7,6 +7,8 @@ import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
 import AccordionList from "@/components/AccordionList";
 import StickyPurchaseBar from "@/components/StickyPurchaseBar";
+import { phoneBn, toBn } from "@/lib/bn";
+import { ENROLLING } from "@/lib/site-data";
 
 const WHY_TRACK = [
   { icon: "📖", title: "বোর্ড সিলেবাস অনুযায়ী", desc: "যা পরীক্ষায় আসে, ঠিক তাই — অধ্যায় ধরে ধরে।" },
@@ -15,11 +17,11 @@ const WHY_TRACK = [
   { icon: "🎯", title: "বোর্ড ধাঁচে মডেল টেস্ট", desc: "সময় ধরে, হলে ঢোকার আগেই অভ্যাস।" },
 ];
 
-export default function BatchDetailClient({ batch }) {
+export default function BatchDetailClient({ batch, site }) {
   const progressRef = useRef(null);
   const fillRef = useRef(null);
   const hasFullDetail = !!batch.subjects;
-  const enrolling = batch.status === "ভর্তি চলছে";
+  const enrolling = batch.status === ENROLLING;
   const enrollHref = `/enroll?type=batch&slug=${batch.slug}`;
 
   const [freeCount] = useState(() =>
@@ -147,18 +149,20 @@ export default function BatchDetailClient({ batch }) {
       {hasFullDetail ? (
         <>
           {/* WHAT YOU GET */}
-          <section className="max-w-[1160px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-            <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6">এই ব্যাচে যা পাচ্ছো</h2>
-            <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-              {batch.stats.map((s) => (
-                <div key={s.label} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-4.5">
-                  <div className="text-2xl">{s.icon}</div>
-                  <div className="font-display font-extrabold text-2xl mt-1.5">{s.n}</div>
-                  <div className="text-[13.5px] text-ink/62">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </section>
+          {batch.stats.length > 0 && (
+            <section className="max-w-[1160px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6">এই ব্যাচে যা পাচ্ছো</h2>
+              <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                {batch.stats.map((s) => (
+                  <div key={s.label} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-4.5">
+                    <div className="text-2xl">{s.icon}</div>
+                    <div className="font-display font-extrabold text-2xl mt-1.5">{s.n}</div>
+                    <div className="text-[13.5px] text-ink/62">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* SYLLABUS */}
           <section id="syllabus" className="bg-lavender">
@@ -166,8 +170,12 @@ export default function BatchDetailClient({ batch }) {
               <div className="flex items-baseline justify-between gap-3 flex-wrap">
                 <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)]">সম্পূর্ণ সিলেবাস</h2>
                 <div className="text-sm text-ink/60">
-                  {batch.subjects.length}টি বিষয় ·{" "}
-                  <span className="text-purple font-bold">{freeCount}টি ফ্রি লেসন</span>
+                  {toBn(batch.subjects.length)}টি বিষয়
+                  {freeCount > 0 && (
+                    <>
+                      {" "}· <span className="text-purple font-bold">{toBn(freeCount)}টি ফ্রি লেসন</span>
+                    </>
+                  )}
                 </div>
               </div>
               <p className="text-[15.5px] text-ink/65 my-1.5 mb-5.5">
@@ -187,62 +195,66 @@ export default function BatchDetailClient({ batch }) {
           </section>
 
           {/* LIVE ROUTINE */}
-          <section className="bg-white">
-            <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-1.5">
-                সাপ্তাহিক লাইভ ক্লাস রুটিন
-              </h2>
-              <p className="text-[15px] text-ink/60 mb-5">
-                লাইভ ক্লাস মিস করলে রেকর্ডিং পাবে — কিছু বাদ যাবে না।
-              </p>
-              <div className="border-2 border-ink rounded-2xl shadow-sticker overflow-hidden overflow-x-auto">
-                <div className="grid grid-cols-[1fr_1fr_1.4fr_1.4fr] bg-ink text-white font-display font-bold text-[14.5px] min-w-140">
-                  <div className="px-4 py-3">বার</div>
-                  <div className="px-4 py-3">সময়</div>
-                  <div className="px-4 py-3">বিষয়</div>
-                  <div className="px-4 py-3">শিক্ষক</div>
-                </div>
-                {batch.routine.map((r) => (
-                  <div
-                    key={r.day}
-                    className="grid grid-cols-[1fr_1fr_1.4fr_1.4fr] border-t border-cloud text-[15px] min-w-140"
-                  >
-                    <div className="px-4 py-3.25 font-bold">{r.day}</div>
-                    <div className="px-4 py-3.25">{r.time}</div>
-                    <div className="px-4 py-3.25">{r.subject}</div>
-                    <div className="px-4 py-3.25 text-ink/70">{r.teacher}</div>
+          {batch.routine.length > 0 && (
+            <section className="bg-white">
+              <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-1.5">
+                  সাপ্তাহিক লাইভ ক্লাস রুটিন
+                </h2>
+                <p className="text-[15px] text-ink/60 mb-5">
+                  লাইভ ক্লাস মিস করলে রেকর্ডিং পাবে — কিছু বাদ যাবে না।
+                </p>
+                <div className="border-2 border-ink rounded-2xl shadow-sticker overflow-hidden overflow-x-auto">
+                  <div className="grid grid-cols-[1fr_1fr_1.4fr_1.4fr] bg-ink text-white font-display font-bold text-[14.5px] min-w-140">
+                    <div className="px-4 py-3">বার</div>
+                    <div className="px-4 py-3">সময়</div>
+                    <div className="px-4 py-3">বিষয়</div>
+                    <div className="px-4 py-3">শিক্ষক</div>
                   </div>
-                ))}
+                  {batch.routine.map((r, i) => (
+                    <div
+                      key={i}
+                      className="grid grid-cols-[1fr_1fr_1.4fr_1.4fr] border-t border-cloud text-[15px] min-w-140"
+                    >
+                      <div className="px-4 py-3.25 font-bold">{r.day}</div>
+                      <div className="px-4 py-3.25">{r.time}</div>
+                      <div className="px-4 py-3.25">{r.subject}</div>
+                      <div className="px-4 py-3.25 text-ink/70">{r.teacher}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* TEACHERS */}
-          <section className="bg-lavender">
-            <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">
-                এই ব্যাচের শিক্ষকবৃন্দ
-              </h2>
-              <div className="flex flex-wrap gap-4.5">
-                {batch.teachers.map((t) => (
-                  <div
-                    key={t.title}
-                    className="flex-1 min-w-75 flex gap-4 bg-white border-2 border-ink rounded-2xl shadow-sticker p-4"
-                  >
-                    <div className="relative shrink-0 w-22.5 h-27.5 rounded-[10px] bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_8px,#E1E2F3_8px,#E1E2F3_16px)] grid place-items-center">
-                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 -rotate-3 w-15 h-4.5 bg-gold/70 border border-ink/25" />
-                      <span className="font-mono text-[9px] text-ink/45">PHOTO</span>
+          {batch.teachers.length > 0 && (
+            <section className="bg-lavender">
+              <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">
+                  এই ব্যাচের শিক্ষকবৃন্দ
+                </h2>
+                <div className="flex flex-wrap gap-4.5">
+                  {batch.teachers.map((t) => (
+                    <div
+                      key={t.title}
+                      className="flex-1 min-w-75 flex gap-4 bg-white border-2 border-ink rounded-2xl shadow-sticker p-4"
+                    >
+                      <div className="relative shrink-0 w-22.5 h-27.5 rounded-[10px] bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_8px,#E1E2F3_8px,#E1E2F3_16px)] grid place-items-center">
+                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 -rotate-3 w-15 h-4.5 bg-gold/70 border border-ink/25" />
+                        <span className="font-mono text-[9px] text-ink/45">PHOTO</span>
+                      </div>
+                      <div>
+                        <div className="font-display font-extrabold text-lg">{t.title}</div>
+                        <div className="text-sm text-purple font-semibold">{t.teaches}</div>
+                        <div className="text-[13.5px] text-ink/62 mt-1">{t.credential}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-display font-extrabold text-lg">{t.title}</div>
-                      <div className="text-sm text-purple font-semibold">{t.teaches}</div>
-                      <div className="text-[13.5px] text-ink/62 mt-1">{t.credential}</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* FREE CLASS */}
           <section className="bg-white">
@@ -263,31 +275,33 @@ export default function BatchDetailClient({ batch }) {
           </section>
 
           {/* TESTIMONIALS */}
-          <section className="bg-ink text-white">
-            <div className="max-w-[1000px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <div className="text-center mb-6.5">
-                <span className="text-gold font-bold">✦ শিক্ষার্থীদের কথা ✦</span>
-              </div>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                {batch.testimonials.map((t) => (
-                  <div
-                    key={t.title}
-                    className="bg-white text-ink border-2 border-black rounded-[14px] shadow-[4px_4px_0_0_rgba(0,0,0,0.4)] px-5 py-4.5"
-                  >
-                    <div className="text-gold text-sm tracking-[2px]">★★★★★</div>
-                    <p className="text-[15.5px] my-2">&ldquo;{t.quote}&rdquo;</p>
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-9.5 h-9.5 rounded-full bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_6px,#E1E2F3_6px,#E1E2F3_12px)] border-[1.5px] border-ink shrink-0" />
-                      <div>
-                        <div className="font-display font-bold text-[14.5px]">{t.title}</div>
-                        <div className="text-[12.5px] text-ink/60">{t.meta}</div>
+          {batch.testimonials.length > 0 && (
+            <section className="bg-ink text-white">
+              <div className="max-w-[1000px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <div className="text-center mb-6.5">
+                  <span className="text-gold font-bold">✦ শিক্ষার্থীদের কথা ✦</span>
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                  {batch.testimonials.map((t) => (
+                    <div
+                      key={t.title}
+                      className="bg-white text-ink border-2 border-black rounded-[14px] shadow-[4px_4px_0_0_rgba(0,0,0,0.4)] px-5 py-4.5"
+                    >
+                      <div className="text-gold text-sm tracking-[2px]">★★★★★</div>
+                      <p className="text-[15.5px] my-2">&ldquo;{t.quote}&rdquo;</p>
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-9.5 h-9.5 rounded-full bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_6px,#E1E2F3_6px,#E1E2F3_12px)] border-[1.5px] border-ink shrink-0" />
+                        <div>
+                          <div className="font-display font-bold text-[14.5px]">{t.title}</div>
+                          <div className="text-[12.5px] text-ink/60">{t.meta}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* HOW TO ENROLL */}
           <section className="bg-lavender">
@@ -300,7 +314,7 @@ export default function BatchDetailClient({ batch }) {
                   {
                     n: "০১",
                     title: "bKash-এ পেমেন্ট",
-                    desc: `Send Money করো ০১XXXXXXXXX নম্বরে, ${batch.price}।`,
+                    desc: `Send Money করো ${phoneBn(site.bkash)} নম্বরে, ${batch.price}।`,
                     swatch: "bg-[repeating-linear-gradient(45deg,#f7dce9,#f7dce9_8px,#f2cadd_8px,#f2cadd_16px)]",
                     label: "bKash SCREENSHOT",
                   },
@@ -341,24 +355,26 @@ export default function BatchDetailClient({ batch }) {
           </section>
 
           {/* FAQ */}
-          <section className="bg-white">
-            <div className="max-w-190 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
-                প্রশ্ন-উত্তর
-              </h2>
-              <div className="grid gap-3">
-                {batch.faqs.map((f) => (
-                  <div
-                    key={f.q}
-                    className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4"
-                  >
-                    <div className="font-display font-bold text-[16.5px]">{f.q}</div>
-                    <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
-                  </div>
-                ))}
+          {batch.faqs.length > 0 && (
+            <section className="bg-white">
+              <div className="max-w-190 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
+                  প্রশ্ন-উত্তর
+                </h2>
+                <div className="grid gap-3">
+                  {batch.faqs.map((f) => (
+                    <div
+                      key={f.q}
+                      className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4"
+                    >
+                      <div className="font-display font-bold text-[16.5px]">{f.q}</div>
+                      <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
         </>
       ) : (
         <section className="bg-lavender">

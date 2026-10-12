@@ -1,3 +1,5 @@
+// Not read by any page since the site moved to the API (src/lib/api.js). Kept as the source for the
+// API's `npm run db:import-site`, which loads this sales copy into the database.
 export const SKILLS = [
   {
     slug: "spoken-english-mastery",

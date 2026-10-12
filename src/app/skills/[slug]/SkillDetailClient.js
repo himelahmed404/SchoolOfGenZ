@@ -7,6 +7,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
 import AccordionList from "@/components/AccordionList";
 import StickyPurchaseBar from "@/components/StickyPurchaseBar";
+import { phoneBn, toBn } from "@/lib/bn";
 
 function OutcomeCheck({ text, delay }) {
   const pathRef = useRef(null);
@@ -58,7 +59,7 @@ function OutcomeCheck({ text, delay }) {
   );
 }
 
-export default function SkillDetailClient({ skill }) {
+export default function SkillDetailClient({ skill, site }) {
   const progressRef = useRef(null);
   const hasFullDetail = !!skill.modules;
 
@@ -109,7 +110,7 @@ export default function SkillDetailClient({ skill }) {
               <span className="font-bold text-[13px] px-3 py-1.25 rounded-full border-[1.5px] border-ink bg-white text-ink">
                 {skill.dur} · {skill.lessons}
               </span>
-              {hasFullDetail && (
+              {skill.certificate && (
                 <span className="font-bold text-[13px] px-3 py-1.25 rounded-full border-[1.5px] border-ink bg-white text-ink">
                   🎓 সার্টিফিকেট
                 </span>
@@ -158,82 +159,92 @@ export default function SkillDetailClient({ skill }) {
       {hasFullDetail ? (
         <>
           {/* FOR WHOM */}
-          <section className="max-w-[1100px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-            <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">
-              এই কোর্সটি কার জন্য
-            </h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-              {skill.forWhom.map((p) => (
-                <div key={p.title} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-5.5">
-                  <div className="text-[28px]">{p.icon}</div>
-                  <h3 className="font-display font-bold text-[17.5px] mt-2 mb-1">{p.title}</h3>
-                  <p className="text-[14.5px] text-ink/65">{p.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* OUTCOMES */}
-          <section className="bg-lavender">
-            <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <div className="text-center mb-1.5">
-                <span className="font-display font-bold text-[13px] tracking-widest uppercase text-purple">
-                  Outcomes
-                </span>
-              </div>
-              <h2 className="font-display font-extrabold text-[clamp(26px,3.4vw,40px)] mb-1.5 text-center">
-                কোর্স শেষে তুমি পারবে
+          {skill.forWhom.length > 0 && (
+            <section className="max-w-[1100px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">
+                এই কোর্সটি কার জন্য
               </h2>
-              <p className="text-base text-ink/60 mx-auto mb-7 text-center max-w-130">
-                লেসন সংখ্যা নয় — তোমার জন্য কী বদলাবে, সেটাই আসল।
-              </p>
-              <div className="grid gap-3.5 max-w-170 mx-auto">
-                {skill.outcomes.map((o, i) => (
-                  <OutcomeCheck key={o} text={o} delay={i * 160} />
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                {skill.forWhom.map((p) => (
+                  <div key={p.title} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-5.5">
+                    <div className="text-[28px]">{p.icon}</div>
+                    <h3 className="font-display font-bold text-[17.5px] mt-2 mb-1">{p.title}</h3>
+                    <p className="text-[14.5px] text-ink/65">{p.desc}</p>
+                  </div>
                 ))}
               </div>
-            </div>
-          </section>
+            </section>
+          )}
+
+          {/* OUTCOMES */}
+          {skill.outcomes.length > 0 && (
+            <section className="bg-lavender">
+              <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <div className="text-center mb-1.5">
+                  <span className="font-display font-bold text-[13px] tracking-widest uppercase text-purple">
+                    Outcomes
+                  </span>
+                </div>
+                <h2 className="font-display font-extrabold text-[clamp(26px,3.4vw,40px)] mb-1.5 text-center">
+                  কোর্স শেষে তুমি পারবে
+                </h2>
+                <p className="text-base text-ink/60 mx-auto mb-7 text-center max-w-130">
+                  লেসন সংখ্যা নয় — তোমার জন্য কী বদলাবে, সেটাই আসল।
+                </p>
+                <div className="grid gap-3.5 max-w-170 mx-auto">
+                  {skill.outcomes.map((o, i) => (
+                    <OutcomeCheck key={o} text={o} delay={i * 160} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* CURRICULUM */}
           <section className="bg-white">
             <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
               <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-1.5">কারিকুলাম</h2>
               <p className="text-[15px] text-ink/60 mb-5.5">
-                {skill.modules.length}টি মডিউল · {skill.lessons} ·{" "}
-                <span className="text-purple font-bold">{freeCount}টি ফ্রি প্রিভিউ</span>
+                {toBn(skill.modules.length)}টি মডিউল · {skill.lessons}
+                {freeCount > 0 && (
+                  <>
+                    {" "}· <span className="text-purple font-bold">{toBn(freeCount)}টি ফ্রি প্রিভিউ</span>
+                  </>
+                )}
               </p>
               <AccordionList items={skill.modules} />
             </div>
           </section>
 
           {/* INSTRUCTOR */}
-          <section className="bg-lavender">
-            <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">তোমার শিক্ষক</h2>
-              <div className="flex flex-wrap gap-6 bg-white border-2 border-ink rounded-[20px] shadow-[5px_5px_0_0_var(--color-ink)] p-6.5">
-                <div className="relative shrink-0 w-40 h-50 rounded-xl bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_10px,#E1E2F3_10px,#E1E2F3_20px)] grid place-items-center">
-                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 -rotate-3 w-20 h-5.5 bg-gold/70 border border-ink/25" />
-                  <span className="font-mono text-[10px] text-ink/45">PHOTO</span>
-                </div>
-                <div className="flex-1 min-w-65">
-                  <div className="font-display font-extrabold text-2xl">{skill.instructor.name}</div>
-                  <div className="text-[15px] text-purple font-semibold">{skill.instructor.role}</div>
-                  <div className="flex flex-wrap gap-2 my-3">
-                    {skill.instructor.badges.map((b) => (
-                      <span
-                        key={b}
-                        className="bg-cloud border-[1.5px] border-ink rounded-full px-3 py-1 text-[13px] font-semibold"
-                      >
-                        {b}
-                      </span>
-                    ))}
+          {skill.instructor && (
+            <section className="bg-lavender">
+              <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-5.5">তোমার শিক্ষক</h2>
+                <div className="flex flex-wrap gap-6 bg-white border-2 border-ink rounded-[20px] shadow-[5px_5px_0_0_var(--color-ink)] p-6.5">
+                  <div className="relative shrink-0 w-40 h-50 rounded-xl bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_10px,#E1E2F3_10px,#E1E2F3_20px)] grid place-items-center">
+                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 -rotate-3 w-20 h-5.5 bg-gold/70 border border-ink/25" />
+                    <span className="font-mono text-[10px] text-ink/45">PHOTO</span>
                   </div>
-                  <p className="text-[15.5px] text-ink/78">{skill.instructor.quote}</p>
+                  <div className="flex-1 min-w-65">
+                    <div className="font-display font-extrabold text-2xl">{skill.instructor.name}</div>
+                    <div className="text-[15px] text-purple font-semibold">{skill.instructor.role}</div>
+                    <div className="flex flex-wrap gap-2 my-3">
+                      {skill.instructor.badges.map((b) => (
+                        <span
+                          key={b}
+                          className="bg-cloud border-[1.5px] border-ink rounded-full px-3 py-1 text-[13px] font-semibold"
+                        >
+                          {b}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[15.5px] text-ink/78">{skill.instructor.quote}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* INCLUDED */}
           <section className="bg-white">
@@ -241,12 +252,12 @@ export default function SkillDetailClient({ skill }) {
               <h2 className="font-display font-extrabold text-[clamp(22px,2.6vw,30px)] mb-5">কোর্সে যা থাকছে</h2>
               <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
                 {[
-                  "▶ ৪৮ লেসন",
+                  `▶ ${skill.lessons}`,
                   "📄 ডাউনলোডেবল রিসোর্স",
                   "🎤 প্র্যাকটিস সেশন",
-                  "🎓 সার্টিফিকেট",
+                  skill.certificate && "🎓 সার্টিফিকেট",
                   "♾️ লাইফটাইম অ্যাক্সেস",
-                ].map((t) => (
+                ].filter(Boolean).map((t) => (
                   <div
                     key={t}
                     className="flex items-center gap-2.5 bg-lavender rounded-xl px-4 py-3.5 font-semibold text-[15px]"
@@ -259,76 +270,82 @@ export default function SkillDetailClient({ skill }) {
           </section>
 
           {/* TESTIMONIALS */}
-          <section className="bg-ink text-white">
-            <div className="max-w-[1000px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <div className="text-center mb-6.5">
-                <span className="text-gold font-bold">✦ শিক্ষার্থীদের কথা ✦</span>
+          {skill.testimonials.length > 0 && (
+            <section className="bg-ink text-white">
+              <div className="max-w-[1000px] mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <div className="text-center mb-6.5">
+                  <span className="text-gold font-bold">✦ শিক্ষার্থীদের কথা ✦</span>
+                </div>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                  {skill.testimonials.map((t) => (
+                    <div
+                      key={t.name}
+                      className="bg-gold text-ink border-2 border-black rounded-[14px] shadow-[4px_4px_0_0_rgba(0,0,0,0.4)] px-5 py-4.5"
+                    >
+                      <div className="text-purple text-sm tracking-[2px]">★★★★★</div>
+                      <p className="text-[15.5px] my-2">&ldquo;{t.quote}&rdquo;</p>
+                      <div className="font-display font-bold text-[14.5px]">{t.name}</div>
+                      <div className="text-[12.5px] text-ink/65">{t.meta}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                {skill.testimonials.map((t) => (
-                  <div
-                    key={t.name}
-                    className="bg-gold text-ink border-2 border-black rounded-[14px] shadow-[4px_4px_0_0_rgba(0,0,0,0.4)] px-5 py-4.5"
-                  >
-                    <div className="text-purple text-sm tracking-[2px]">★★★★★</div>
-                    <p className="text-[15.5px] my-2">&ldquo;{t.quote}&rdquo;</p>
-                    <div className="font-display font-bold text-[14.5px]">{t.name}</div>
-                    <div className="text-[12.5px] text-ink/65">{t.meta}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* HOW TO BUY */}
-          <section className="bg-lavender">
-            <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
-                কীভাবে কিনবে
-              </h2>
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-                {[
-                  { n: "০১", title: "bKash-এ পেমেন্ট", desc: `Send Money ${skill.price} — ০১XXXXXXXXX।` },
-                  { n: "০২", title: "TrxID জমা দাও", desc: "ফর্মে TrxID আর নম্বর লিখে দাও।" },
-                  { n: "০৩", title: "শুরু করে দাও", desc: "সাথে সাথেই সব লেসন খুলে যাবে।" },
-                ].map((s) => (
-                  <div key={s.n} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-5">
-                    <div className="font-display font-extrabold text-purple text-[22px]">{s.n}</div>
-                    <h3 className="font-display font-bold text-[17px] mt-1.5 mb-1">{s.title}</h3>
-                    <p className="text-sm text-ink/65">{s.desc}</p>
-                  </div>
-                ))}
+          {skill.priceNum > 0 && (
+            <section className="bg-lavender">
+              <div className="max-w-225 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
+                  কীভাবে কিনবে
+                </h2>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+                  {[
+                    { n: "০১", title: "bKash-এ পেমেন্ট", desc: `Send Money ${skill.price} — ${phoneBn(site.bkash)}।` },
+                    { n: "০২", title: "TrxID জমা দাও", desc: "ফর্মে TrxID আর নম্বর লিখে দাও।" },
+                    { n: "০৩", title: "শুরু করে দাও", desc: "সাথে সাথেই সব লেসন খুলে যাবে।" },
+                  ].map((s) => (
+                    <div key={s.n} className="bg-white border-2 border-ink rounded-2xl shadow-sticker p-5">
+                      <div className="font-display font-extrabold text-purple text-[22px]">{s.n}</div>
+                      <h3 className="font-display font-bold text-[17px] mt-1.5 mb-1">{s.title}</h3>
+                      <p className="text-sm text-ink/65">{s.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-center mt-6.5">
+                  <Link
+                    href={enrollHref}
+                    className="font-display font-bold text-lg px-8.5 py-3.75 bg-ink text-white border-2 border-ink rounded-full shadow-sticker no-underline inline-block transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-sticker-lg"
+                  >
+                    কোর্সটি নাও →
+                  </Link>
+                </div>
               </div>
-              <div className="text-center mt-6.5">
-                <Link
-                  href={enrollHref}
-                  className="font-display font-bold text-lg px-8.5 py-3.75 bg-ink text-white border-2 border-ink rounded-full shadow-sticker no-underline inline-block transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-sticker-lg"
-                >
-                  কোর্সটি নাও →
-                </Link>
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* FAQ */}
-          <section className="bg-white">
-            <div className="max-w-190 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
-              <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
-                প্রশ্ন-উত্তর
-              </h2>
-              <div className="grid gap-3">
-                {skill.faqs.map((f) => (
-                  <div
-                    key={f.q}
-                    className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4"
-                  >
-                    <div className="font-display font-bold text-[16.5px]">{f.q}</div>
-                    <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
-                  </div>
-                ))}
+          {skill.faqs.length > 0 && (
+            <section className="bg-white">
+              <div className="max-w-190 mx-auto px-6 py-[clamp(44px,6vw,72px)]">
+                <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
+                  প্রশ্ন-উত্তর
+                </h2>
+                <div className="grid gap-3">
+                  {skill.faqs.map((f) => (
+                    <div
+                      key={f.q}
+                      className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4"
+                    >
+                      <div className="font-display font-bold text-[16.5px]">{f.q}</div>
+                      <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
         </>
       ) : (
         <section className="bg-white">

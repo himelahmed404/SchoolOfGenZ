@@ -5,7 +5,7 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
-import { BATCHES } from "@/lib/data/batches";
+import { ENROLLING } from "@/lib/site-data";
 import { toBn, fromBn } from "@/lib/bn";
 
 const DEPARTMENTS = [
@@ -29,8 +29,8 @@ const SEMESTERS = [
 
 const STATUSES = [
   ["all", "সব"],
-  ["ভর্তি চলছে", "ভর্তি চলছে"],
-  ["শীঘ্রই", "শীঘ্রই"],
+  [ENROLLING, ENROLLING],
+  ["ক্লাস চলছে", "ক্লাস চলছে"],
 ];
 
 const FAQS = [
@@ -80,7 +80,7 @@ function ChipGroup({ label, options, value, onChange }) {
 }
 
 function BatchCard({ b, index }) {
-  const enrolling = b.status === "ভর্তি চলছে";
+  const enrolling = b.status === ENROLLING;
   return (
     <Link
       href={`/academic/${b.slug}`}
@@ -119,7 +119,7 @@ function BatchCard({ b, index }) {
   );
 }
 
-export default function AcademicClient() {
+export default function AcademicClient({ batches, faqs }) {
   const [dept, setDept] = useState("all");
   const [sem, setSem] = useState("all");
   const [status, setStatus] = useState("all");
@@ -141,7 +141,7 @@ export default function AcademicClient() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const filtered = BATCHES.filter(
+  const filtered = batches.filter(
     (b) => (dept === "all" || b.dept === dept) && (sem === "all" || b.sem === sem) && (status === "all" || b.status === status)
   );
 
@@ -208,7 +208,7 @@ export default function AcademicClient() {
         {filtered.length > 0 ? (
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((b, i) => (
-              <BatchCard key={b.title} b={b} index={i} />
+              <BatchCard key={b.slug} b={b} index={i} />
             ))}
           </div>
         ) : (
@@ -272,7 +272,7 @@ export default function AcademicClient() {
             একাডেমিক ব্যাচ · প্রশ্ন-উত্তর
           </h2>
           <div className="grid gap-3">
-            {FAQS.map((f) => (
+            {(faqs.length ? faqs : FAQS).map((f) => (
               <div key={f.q} className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4">
                 <div className="font-display font-bold text-[17px]">{f.q}</div>
                 <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>

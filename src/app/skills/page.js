@@ -1,3 +1,4 @@
+import { getFaqs, getSkills } from "@/lib/api";
 import SkillsClient from "./SkillsClient";
 
 export const metadata = {
@@ -6,6 +7,7 @@ export const metadata = {
     "ইংরেজি বলা, উপস্থাপনা আর IELTS — ধাপে ধাপে, বাংলায়। প্রতিটাতে লাইফটাইম অ্যাক্সেস আর সার্টিফিকেট।",
 };
 
-export default function SkillsPage() {
-  return <SkillsClient />;
+export default async function SkillsPage() {
+  const [skills, faqs] = await Promise.all([getSkills(), getFaqs("single")]);
+  return <SkillsClient skills={skills} faqs={faqs} />;
 }

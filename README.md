@@ -1,3 +1,21 @@
+# School of GenZ: marketing site
+
+## Where the data comes from
+
+Batches, single courses, prices, the syllabus, sales copy and the payment numbers are read from the School of GenZ API (the `server/` folder of the LMS repo). Blog posts are still in `src/lib/data/blog.js`.
+
+- `src/lib/api.js` reads `/v1/public/*` on the server and keeps each answer for a minute, so a price changed in the admin console shows here within a minute or so.
+- `src/lib/site-data.js` turns the API's numbers and dates into the Bangla strings the pages show.
+- The enrollment form (`src/app/enroll`) asks the API for the price, checks a coupon and sends the form through `/api/*`, which `next.config.mjs` forwards to the API. `src/lib/enroll.js` words the API's error codes in Bangla.
+- `src/lib/data/batches.js` and `skills.js` are no longer read by any page. They stay as the source for the API's `npm run db:import-site`.
+
+| Variable | What it is |
+|---|---|
+| `API_ORIGIN` | Where the API runs. In development it defaults to `http://localhost:4000`. With none set in production the lists are empty and the form cannot send. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | The Cloudflare Turnstile site key for the enrollment form. With none set the form shows no check. |
+
+To run it beside the LMS, which also uses port 3000: start the API (`npm run dev:api` in the LMS repo), then `npm run dev -- -p 3100` here.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started

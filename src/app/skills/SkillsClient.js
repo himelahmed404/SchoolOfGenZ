@@ -5,7 +5,6 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
-import { SKILLS, SKILLS_FAQS } from "@/lib/data/skills";
 
 const WHY = [
   { icon: "♾️", title: "লাইফটাইম অ্যাক্সেস", desc: "একবার নাও, যতদিন খুশি ফিরে এসো।" },
@@ -47,7 +46,7 @@ function SkillCard({ c, index }) {
         <div className="text-[13px] text-ink/55 mt-2">
           {c.lessons} · {c.dur}
         </div>
-        <div className="text-[12.5px] text-success font-bold mt-1">♾️ লাইফটাইম · 🎓 সার্টিফিকেট</div>
+        <div className="text-[12.5px] text-success font-bold mt-1">♾️ লাইফটাইম{c.certificate ? " · 🎓 সার্টিফিকেট" : ""}</div>
         <div className="flex items-baseline gap-2.25 mt-3">
           <span className="font-display font-extrabold text-[23px]">{c.price}</span>
           <span className="line-through text-ink/40 text-sm">{c.old}</span>
@@ -60,7 +59,7 @@ function SkillCard({ c, index }) {
   );
 }
 
-export default function SkillsClient() {
+export default function SkillsClient({ skills, faqs }) {
   const progressRef = useRef(null);
 
   useEffect(() => {
@@ -114,7 +113,7 @@ export default function SkillsClient() {
       {/* COURSE GRID */}
       <section className="max-w-[1100px] mx-auto px-6 pt-5.5 pb-17.5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {SKILLS.map((c, i) => (
+          {skills.map((c, i) => (
             <SkillCard key={c.slug} c={c} index={i} />
           ))}
         </div>
@@ -158,21 +157,23 @@ export default function SkillsClient() {
       </section>
 
       {/* FAQ */}
-      <section className="bg-white">
-        <div className="max-w-190 mx-auto px-6 py-[clamp(48px,6vw,76px)]">
-          <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
-            স্কিল কোর্স · প্রশ্ন-উত্তর
-          </h2>
-          <div className="grid gap-3">
-            {SKILLS_FAQS.map((f) => (
-              <div key={f.q} className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4">
-                <div className="font-display font-bold text-[17px]">{f.q}</div>
-                <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
-              </div>
-            ))}
+      {faqs.length > 0 && (
+        <section className="bg-white">
+          <div className="max-w-190 mx-auto px-6 py-[clamp(48px,6vw,76px)]">
+            <h2 className="font-display font-extrabold text-[clamp(24px,3vw,34px)] mb-6 text-center">
+              স্কিল কোর্স · প্রশ্ন-উত্তর
+            </h2>
+            <div className="grid gap-3">
+              {faqs.map((f) => (
+                <div key={f.q} className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] px-4.5 py-4">
+                  <div className="font-display font-bold text-[17px]">{f.q}</div>
+                  <div className="text-[15px] text-ink/75 mt-1.5">{f.a}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA BAND */}
       <section className="bg-periwinkle relative overflow-hidden bg-cta-stripes">
@@ -183,12 +184,14 @@ export default function SkillsClient() {
           <p className="text-[17px] text-ink/78 mt-3 mb-6">
             লাইফটাইম অ্যাক্সেস মানে কোনো তাড়া নেই। নিজের গতিতে এগোও।
           </p>
-          <Link
-            href="/skills/spoken-english-mastery"
-            className="font-display font-bold text-lg px-8 py-3.75 bg-ink text-white border-2 border-ink rounded-full shadow-sticker no-underline inline-block transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-sticker-lg"
-          >
-            Spoken English দেখো
-          </Link>
+          {skills[0] && (
+            <Link
+              href={`/skills/${skills[0].slug}`}
+              className="font-display font-bold text-lg px-8 py-3.75 bg-ink text-white border-2 border-ink rounded-full shadow-sticker no-underline inline-block transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-sticker-lg"
+            >
+              {skills[0].title} দেখো
+            </Link>
+          )}
         </div>
       </section>
 

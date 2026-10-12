@@ -20,7 +20,7 @@ export default function AccordionList({ items, defaultOpen = 0, onOpenChange }) 
     <div className="grid gap-3">
       {items.map((m, i) => (
         <div
-          key={m.title}
+          key={i}
           className="bg-white border-2 border-ink rounded-[14px] shadow-[3px_3px_0_0_var(--color-ink)] overflow-hidden"
         >
           <button
@@ -48,8 +48,8 @@ export default function AccordionList({ items, defaultOpen = 0, onOpenChange }) 
           </button>
           {open.has(i) && (
             <div className="px-4.5 pb-4 pl-15.5 grid gap-2">
-              {m.rows.map((r) => (
-                <div key={r.text} className="flex items-center gap-2.5 px-3 py-2.25 rounded-[10px] bg-cloud">
+              {m.rows.map((r, j) => (
+                <div key={j} className="flex items-center gap-2.5 px-3 py-2.25 rounded-[10px] bg-cloud">
                   <span className="text-sm">{r.icon || "▶"}</span>
                   <span className="flex-1 text-[15px]">{r.text}</span>
                   {r.badge && (
