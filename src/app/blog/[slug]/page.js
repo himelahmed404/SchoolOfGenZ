@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
-import { getPostBySlug } from "@/lib/data/blog";
+import { getBatches, getPost, getPosts, getSkills } from "@/lib/api";
+import { ctaOf, relatedTo } from "@/lib/site-data";
 import BlogArticleClient from "./BlogArticleClient";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPost(slug);
   if (!post) return {};
   return {
     title: `${post.title} | School of GenZ`,
@@ -14,7 +15,8 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogArticlePage({ params }) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPost(slug);
   if (!post) notFound();
-  return <BlogArticleClient post={post} />;
+  const [posts, batches, skills] = await Promise.all([getPosts(), getBatches(), getSkills()]);
+  return <BlogArticleClient post={post} related={relatedTo(post, posts)} cta={ctaOf(post, batches, skills)} />;
 }

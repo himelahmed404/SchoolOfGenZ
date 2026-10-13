@@ -5,7 +5,6 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
-import { CATEGORIES, POSTS } from "@/lib/data/blog";
 import { toBn, fromBn } from "@/lib/bn";
 
 const PER_PAGE = 6;
@@ -51,7 +50,7 @@ function PostCard({ p, index }) {
   );
 }
 
-export default function BlogClient() {
+export default function BlogClient({ posts }) {
   const progressRef = useRef(null);
   const [cat, setCat] = useState("all");
   const [query, setQuery] = useState("");
@@ -72,22 +71,27 @@ export default function BlogClient() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const featured = POSTS.find((p) => p.pop === 1);
+  // The newest post marked Featured leads the page; with none marked, the newest post does.
+  const featured = posts.find((p) => p.featured) || posts[0];
+  // Categories are whatever the posts on the site use, the fullest first.
+  const categories = useMemo(() => {
+    const count = new Map();
+    for (const p of posts) if (p.category) count.set(p.category, (count.get(p.category) || 0) + 1);
+    return [...count].sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
+  }, [posts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return POSTS.filter(
+    return posts.filter(
       (p) => (cat === "all" || p.category === cat) && (!q || (p.title + p.excerpt).toLowerCase().includes(q))
     );
-  }, [cat, query]);
+  }, [posts, cat, query]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const currentPage = Math.min(page, totalPages);
   const pagePosts = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
-  const trending = POSTS.filter((p) => p.pop)
-    .sort((a, b) => a.pop - b.pop)
-    .slice(0, 5);
+  const trending = [...posts.filter((p) => p.featured), ...posts.filter((p) => !p.featured)].slice(0, 5);
 
   const resetAll = () => {
     setCat("all");
@@ -129,32 +133,34 @@ export default function BlogClient() {
       </header>
 
       {/* FEATURED */}
-      <section className="max-w-[1160px] mx-auto px-6 pt-9">
-        <Link
-          href={`/blog/${featured.slug}`}
-          className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] border-2 border-ink rounded-[22px] shadow-[6px_6px_0_0_var(--color-ink)] overflow-hidden no-underline text-ink transition-transform duration-200 hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[9px_9px_0_0_var(--color-ink)]"
-        >
-          <div className="relative min-h-70 bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_12px,#E1E2F3_12px,#E1E2F3_24px)] grid place-items-center">
-            <span className="absolute top-4 left-4 bg-gold text-ink font-bold text-[13px] px-3.25 py-1.25 rounded-full border-[1.5px] border-ink">
-              ⭐ ফিচার্ড
-            </span>
-            <span className="font-mono text-xs text-ink/45">COVER IMAGE</span>
-          </div>
-          <div className="p-[clamp(24px,3vw,40px)] flex flex-col justify-center">
-            <span className="self-start bg-purple/10 text-purple font-bold text-[12.5px] px-2.75 py-1 rounded-full">
-              {featured.category}
-            </span>
-            <h2 className="font-display font-extrabold text-[clamp(22px,2.6vw,32px)] leading-tight mt-3">
-              {featured.title}
-            </h2>
-            <p className="text-base text-ink/70 mt-3">{featured.excerpt}</p>
-            <div className="flex items-center gap-2.5 mt-4.5 text-[13.5px] text-ink/55">
-              <span className="w-7.5 h-7.5 rounded-full bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_5px,#E1E2F3_5px,#E1E2F3_10px)] border-[1.5px] border-ink" />
-              <span>{featured.author.short}</span> · <span>{featured.date}</span> · <span>{featured.read}</span>
+      {featured && (
+        <section className="max-w-[1160px] mx-auto px-6 pt-9">
+          <Link
+            href={`/blog/${featured.slug}`}
+            className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] border-2 border-ink rounded-[22px] shadow-[6px_6px_0_0_var(--color-ink)] overflow-hidden no-underline text-ink transition-transform duration-200 hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[9px_9px_0_0_var(--color-ink)]"
+          >
+            <div className="relative min-h-70 bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_12px,#E1E2F3_12px,#E1E2F3_24px)] grid place-items-center">
+              <span className="absolute top-4 left-4 bg-gold text-ink font-bold text-[13px] px-3.25 py-1.25 rounded-full border-[1.5px] border-ink">
+                ⭐ ফিচার্ড
+              </span>
+              <span className="font-mono text-xs text-ink/45">COVER IMAGE</span>
             </div>
-          </div>
-        </Link>
-      </section>
+            <div className="p-[clamp(24px,3vw,40px)] flex flex-col justify-center">
+              <span className="self-start bg-purple/10 text-purple font-bold text-[12.5px] px-2.75 py-1 rounded-full">
+                {featured.category}
+              </span>
+              <h2 className="font-display font-extrabold text-[clamp(22px,2.6vw,32px)] leading-tight mt-3">
+                {featured.title}
+              </h2>
+              <p className="text-base text-ink/70 mt-3">{featured.excerpt}</p>
+              <div className="flex items-center gap-2.5 mt-4.5 text-[13.5px] text-ink/55">
+                <span className="w-7.5 h-7.5 rounded-full bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_5px,#E1E2F3_5px,#E1E2F3_10px)] border-[1.5px] border-ink" />
+                <span>{featured.author ? featured.author.name : "School of GenZ টিম"}</span> · <span>{featured.date}</span> · <span>{featured.read}</span>
+              </div>
+            </div>
+          </Link>
+        </section>
+      )}
 
       {/* BODY */}
       <section className="max-w-[1160px] mx-auto px-6 pt-9 pb-17.5 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-9 items-start">
@@ -183,7 +189,7 @@ export default function BlogClient() {
               >
                 সব
               </button>
-              {CATEGORIES.map((c) => (
+              {categories.map(({ name: c }) => (
                 <button
                   key={c}
                   type="button"
@@ -266,14 +272,14 @@ export default function BlogClient() {
               🔥 জনপ্রিয় লেখা
             </div>
             <div className="p-1.5">
-              {trending.map((t) => (
+              {trending.map((t, i) => (
                 <Link
                   key={t.slug}
                   href={`/blog/${t.slug}`}
                   className="flex gap-3 items-start px-3 py-2.75 rounded-xl no-underline text-ink hover:bg-lavender"
                 >
                   <span className="shrink-0 font-display font-extrabold text-xl text-periwinkle leading-none">
-                    {toBn(t.pop)}
+                    {toBn(i + 1)}
                   </span>
                   <span className="font-semibold text-sm leading-snug">{t.title}</span>
                 </Link>
@@ -312,7 +318,7 @@ export default function BlogClient() {
           <div className="bg-white border-2 border-ink rounded-2xl shadow-sticker px-4.5 py-4">
             <div className="font-display font-bold text-[15.5px] mb-2.5">ক্যাটাগরি</div>
             <div className="grid gap-1.5">
-              {CATEGORIES.map((c) => (
+              {categories.map(({ name: c, n }) => (
                 <button
                   key={c}
                   type="button"
@@ -324,7 +330,7 @@ export default function BlogClient() {
                 >
                   <span>{c}</span>
                   <span className="text-ink/45 font-semibold">
-                    {toBn(POSTS.filter((p) => p.category === c).length)}
+                    {toBn(n)}
                   </span>
                 </button>
               ))}

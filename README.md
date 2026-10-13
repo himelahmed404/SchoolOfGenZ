@@ -2,12 +2,13 @@
 
 ## Where the data comes from
 
-Batches, single courses, prices, the syllabus, sales copy and the payment numbers are read from the School of GenZ API (the `server/` folder of the LMS repo). Blog posts are still in `src/lib/data/blog.js`.
+Batches, single courses, prices, the syllabus, sales copy, the payment numbers and the blog are read from the School of GenZ API (the `server/` folder of the LMS repo). Nothing a visitor reads about a batch, a course or a post is kept in this repo.
 
 - `src/lib/api.js` reads `/v1/public/*` on the server and keeps each answer for a minute, so a price changed in the admin console shows here within a minute or so.
 - `src/lib/site-data.js` turns the API's numbers and dates into the Bangla strings the pages show.
 - The enrollment form (`src/app/enroll`) asks the API for the price, checks a coupon and sends the form through `/api/v1/public/*`, the only part of the API that `next.config.mjs` forwards. `src/lib/enroll.js` words the API's error codes in Bangla.
-- `src/lib/data/batches.js` and `skills.js` are no longer read by any page. They stay as the source for the API's `npm run db:import-site`.
+- `/blog` lists what is published (`/v1/public/blog`) and `/blog/[slug]` shows one post. Posts are written in the admin console's Blog section; a draft is a 404 here. A post's closing box leads to the program the post names, or to the list of its side of the school.
+- `src/lib/data/` is gone. Its batches, courses and posts were read into the API's `server/src/db/seed/site.json` before it was removed; the commit before this one still has the files.
 
 | Variable | What it is |
 |---|---|

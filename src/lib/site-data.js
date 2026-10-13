@@ -129,3 +129,60 @@ export function toSkill(s) {
     faqs: once(s.faqs),
   };
 }
+
+/** A note in the margin leans one way, then the other. */
+const LEAN = ["-rotate-[4deg]", "rotate-[3deg]"];
+/** Only a file kept at an https address is linked or drawn. */
+const fileOf = (v) => (/^https:\/\//.test(text(v)) ? v : "");
+
+/** A post's blocks, as `/blog/[slug]` draws them. A block with nothing in it is left out. */
+function toBlocks(body) {
+  let notes = 0;
+  const note = (b) => (text(b.cap) ? { note: { text: b.cap, rotate: LEAN[notes++ % LEAN.length] } } : {});
+  return list(body)
+    .map((b) => {
+      const x = text(b.x);
+      if (b.t === "h") return x && { type: "h2", text: x, ...note(b) };
+      if (b.t === "quote") return x && { type: "quote", text: x, ...note(b) };
+      if (b.t === "list") return x && { type: "list", items: x.split("\n").map((s) => s.trim()).filter(Boolean) };
+      if (b.t === "pdf") return x && { type: "pdf", title: x, meta: text(b.cap), href: fileOf(b.file) };
+      if (b.t === "img") return fileOf(b.file) && { type: "img", src: b.file, alt: text(b.cap) };
+      if (b.t === "code" || b.t === "fx") return x && { type: "code", text: x };
+      return x && { type: "p", text: x };
+    })
+    .filter(Boolean);
+}
+
+/** A blog post, for a card, and with its body when the API sent one (`/blog/[slug]`). */
+export function toPost(p) {
+  const card = {
+    slug: p.slug,
+    title: p.title,
+    category: p.category,
+    track: p.track === "single" ? "skill" : "academic",
+    date: dateBn(p.date),
+    read: `${toBn(p.readMinutes)} মিনিট`,
+    featured: !!p.featured,
+    excerpt: text(p.excerpt),
+    author: p.author && p.author.name ? { name: p.author.name, bio: text(p.author.bio) } : null,
+    program: p.program || "",
+  };
+  return p.body ? { ...card, body: toBlocks(p.body) } : card;
+}
+
+/** Up to three other posts of the same category, newest first. */
+export const relatedTo = (post, posts) => posts.filter((p) => p.slug !== post.slug && p.category === post.category).slice(0, 3);
+
+/**
+ * Where a post's closing box leads: the batch or course the post names, when it is on sale,
+ * otherwise the list of its side of the school.
+ */
+export function ctaOf(post, batches, skills) {
+  const skill = post.program && skills.find((s) => s.program === post.program);
+  if (skill) return { kicker: "📘 এই লেখাটা কাজে লাগলে —", title: skill.title, desc: skill.tagline || skill.pitch || post.excerpt, href: `/skills/${skill.slug}`, label: "কোর্স দেখো →" };
+  const mine = post.program ? batches.filter((b) => b.program === post.program) : [];
+  const batch = mine.find((b) => b.status === ENROLLING) || mine[0];
+  if (batch) return { kicker: "📘 এই লেখাটা কাজে লাগলে —", title: batch.title, desc: batch.tagline || batch.counts, href: `/academic/${batch.slug}`, label: "ব্যাচ দেখো →" };
+  const skillSide = post.track === "skill";
+  return { kicker: "📘 আরও শিখতে চাও?", title: post.category, desc: post.excerpt, href: skillSide ? "/skills" : "/academic", label: skillSide ? "স্কিল কোর্স দেখো →" : "একাডেমিক ব্যাচ দেখো →" };
+}

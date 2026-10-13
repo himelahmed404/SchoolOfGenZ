@@ -1,4 +1,4 @@
-import { toBatch, toSkill } from "./site-data";
+import { toBatch, toPost, toSkill } from "./site-data";
 
 /**
  * What the pages read from the API, on the server. Each answer is kept for a minute, so a price changed in
@@ -43,6 +43,15 @@ export async function getBatch(slug) {
 export async function getSkill(slug) {
   const s = await read("/courses/" + encodeURIComponent(slug));
   return s && toSkill(s);
+}
+
+/** The blog's posts, newest first, without their bodies. */
+export const getPosts = async () => (await list("/blog")).map(toPost);
+
+/** One post with its body, or null when none is published at that address. */
+export async function getPost(slug) {
+  const p = await read("/blog/" + encodeURIComponent(slug));
+  return p && toPost(p);
 }
 
 const NO_FACTS = { bkash: "", nagad: "", supportPhone: "" };

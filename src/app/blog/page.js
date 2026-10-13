@@ -1,3 +1,4 @@
+import { getPosts } from "@/lib/api";
 import BlogClient from "./BlogClient";
 
 export const metadata = {
@@ -6,6 +7,6 @@ export const metadata = {
     "সাজেশন, বিটিইবি আপডেট, ক্যারিয়ার গাইড আর ইংরেজি শেখার টিপস — নিয়মিত নতুন লেখা, তোমার ভাষায়।",
 };
 
-export default function BlogPage() {
-  return <BlogClient />;
+export default async function BlogPage() {
+  return <BlogClient posts={await getPosts()} />;
 }

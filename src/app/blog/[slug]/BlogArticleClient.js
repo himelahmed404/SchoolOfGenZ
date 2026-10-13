@@ -5,7 +5,6 @@ import Link from "next/link";
 import SiteNav from "@/components/SiteNav";
 import SiteFooter from "@/components/SiteFooter";
 import SupportChat from "@/components/SupportChat";
-import { getRelatedPosts } from "@/lib/data/blog";
 
 function MarginNote({ text, rotate }) {
   return (
@@ -60,7 +59,33 @@ function Body({ blocks }) {
             <div className="font-display font-bold text-base">{b.title}</div>
             <div className="text-[13px] text-ink/60">{b.meta}</div>
           </div>
+          {b.href && (
+            <a
+              href={b.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 font-display font-bold text-sm px-4 py-2.5 bg-white text-ink border-2 border-ink rounded-full no-underline"
+            >
+              ডাউনলোড
+            </a>
+          )}
         </div>
+      );
+    }
+    if (b.type === "img") {
+      return (
+        <figure key={i} className="my-6.5">
+          {/* eslint-disable-next-line @next/next/no-img-element -- the file is in the school's own store, already sized */}
+          <img src={b.src} alt={b.alt} loading="lazy" className="w-full border-2 border-ink rounded-[14px]" />
+          {b.alt && <figcaption className="text-[13px] text-ink/60 mt-2 text-center">{b.alt}</figcaption>}
+        </figure>
+      );
+    }
+    if (b.type === "code") {
+      return (
+        <pre key={i} className="mb-5.5 px-4 py-3.5 bg-ink text-white rounded-xl text-sm font-mono overflow-x-auto">
+          {b.text}
+        </pre>
       );
     }
     if (b.type === "list") {
@@ -78,10 +103,9 @@ function Body({ blocks }) {
   });
 }
 
-export default function BlogArticleClient({ post }) {
+export default function BlogArticleClient({ post, related, cta }) {
   const progressRef = useRef(null);
-  const related = getRelatedPosts(post);
-  const hasFullBody = !!post.body;
+  const hasFullBody = post.body.length > 0;
 
   useEffect(() => {
     const onScroll = () => {
@@ -94,14 +118,6 @@ export default function BlogArticleClient({ post }) {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const cta = post.cta || {
-    kicker: "📘 আরও শিখতে চাও?",
-    title: post.category,
-    desc: post.excerpt,
-    href: post.track === "skill" ? "/skills" : "/academic",
-    label: post.track === "skill" ? "স্কিল কোর্স দেখো →" : "একাডেমিক ব্যাচ দেখো →",
-  };
 
   return (
     <div className="relative">
@@ -133,7 +149,7 @@ export default function BlogArticleClient({ post }) {
             {post.author ? (
               <span className="flex items-center gap-2.25">
                 <span className="w-9 h-9 rounded-full bg-[repeating-linear-gradient(45deg,#EEEFFB,#EEEFFB_6px,#E1E2F3_6px,#E1E2F3_12px)] border-[1.5px] border-ink" />
-                <b className="text-ink font-bold">{post.author.short}</b>
+                <b className="text-ink font-bold">{post.author.name}</b>
               </span>
             ) : (
               <span className="font-bold text-ink">School of GenZ টিম</span>
